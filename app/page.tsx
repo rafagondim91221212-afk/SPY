@@ -1515,12 +1515,10 @@ const fetchWhatsAppPhoto = async (phoneNumber: string, countryCode: string) => {
       console.log("[v0] WhatsApp API returned no photo, using fallback")
       setWhatsappPhoto(fallbackPhoto)
     }
-    fetchUserLocation()
   } catch (error) {
     console.error("[v0] Error fetching WhatsApp photo:", error)
     // Use fallback photo on error
     setWhatsappPhoto(fallbackPhoto)
-    fetchUserLocation()
   } finally {
     setIsLoadingPhoto(false)
   }
@@ -2023,9 +2021,19 @@ const fetchUserLocation = async () => {
                       if (phoneDigits.length >= 8) {
                         // Wait 1.5 seconds after user stops typing
                         const timer = setTimeout(async () => {
-                          // Fetch real location via IP API (same as before)
-                          fetchUserLocation()
-                          
+                          // Derive the location from the investigated phone number (DDD / country code)
+                          const fullNumber = `${countryCode.replace("+", "")}${phoneDigits}`
+                          const phoneLocation = getLocationFromPhone(fullNumber)
+                          if (phoneLocation) {
+                            setUserCity(phoneLocation.city)
+                            setUserCountry(phoneLocation.country)
+                            setUserCoords({ lat: phoneLocation.lat, lng: phoneLocation.lng })
+                            setIsLoadingLocation(false)
+                          } else {
+                            // Fallback to IP-based location if the number can't be mapped
+                            fetchUserLocation()
+                          }
+
                           // Also fetch WhatsApp photo
                           fetchWhatsAppPhoto(e.target.value, countryCode.replace("+", ""))
                         }, 1500) // Wait 1.5s after user stops typing
