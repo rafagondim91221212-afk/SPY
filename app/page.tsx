@@ -1595,7 +1595,8 @@ const fetchUserLocation = async () => {
                 Feeling something is wrong?
               </p>
               <p className="text-base text-muted-foreground leading-relaxed">
-                You deserve to know the truth. Even the conversations they tried to hide...
+                Turn Suspicion Into Insight. Our technology organizes and analyzes data to help you
+                better understand the situation.
               </p>
             </div>
             
