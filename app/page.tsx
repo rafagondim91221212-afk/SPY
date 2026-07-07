@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useCallback, useEffect, useRef, Suspense } from "react" // Import useRef and Suspense
 import { Button } from "@/components/ui/button"
-import { Camera, Flame, Facebook, CheckCircle, MessageCircle, Heart, Upload, ScanEye, User, Calendar, Beaker as Gender, Home, Compass, MessageSquare, X, Star, MapPin, Lock, Phone, ChevronLeft, ChevronRight, Mic, Send } from "lucide-react"
+import { Camera, Flame, Facebook, CheckCircle, MessageCircle, Heart, Upload, ScanEye, User, Calendar, Beaker as Gender, Home, Compass, MessageSquare, X, Star, MapPin, Lock, Phone, ChevronLeft, ChevronRight, Mic, Send, Clock, EyeOff, Zap, ArrowRight, ShieldCheck, Ban } from "lucide-react"
 import { fetchInstagramProfile, fetchInstagramPosts } from "@/lib/instagram-tracker"
 import { AlertTriangle } from "lucide-react"
 
@@ -1515,12 +1515,10 @@ const fetchWhatsAppPhoto = async (phoneNumber: string, countryCode: string) => {
       console.log("[v0] WhatsApp API returned no photo, using fallback")
       setWhatsappPhoto(fallbackPhoto)
     }
-    fetchUserLocation()
   } catch (error) {
     console.error("[v0] Error fetching WhatsApp photo:", error)
     // Use fallback photo on error
     setWhatsappPhoto(fallbackPhoto)
-    fetchUserLocation()
   } finally {
     setIsLoadingPhoto(false)
   }
@@ -1595,7 +1593,8 @@ const fetchUserLocation = async () => {
                 Feeling something is wrong?
               </p>
               <p className="text-base text-muted-foreground leading-relaxed">
-                You deserve to know the truth. Even the conversations they tried to hide...
+                Turn Suspicion Into Insight. Our technology organizes and analyzes data to help you
+                better understand the situation.
               </p>
             </div>
             
@@ -1686,15 +1685,12 @@ const fetchUserLocation = async () => {
         return (
           <div className="text-center space-y-6 px-4">
             <LimitWarningBanner />
-            <div className="space-y-2">
-              <h2 className="text-2xl md:text-4xl font-bold text-foreground">
-                <span className="gradient-text-pink">Target</span> Profile
+            <div className="w-full max-w-sm mx-auto glass-card border border-primary/40 rounded-2xl p-6 shadow-2xl glow-pink space-y-5">
+              <h2 className="text-xl md:text-2xl font-bold text-foreground text-balance leading-snug">
+                Enter their WhatsApp number to begin —{" "}
+                <span className="gradient-text-pink">100% private</span>
               </h2>
-              <p className="text-base text-muted-foreground">
-                Fill in the details for a more accurate analysis
-              </p>
-            </div>
-            <div className="w-full max-w-sm mx-auto space-y-4">
+              <div className="w-full space-y-4">
               <div className="relative">
                 <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                 <input
@@ -1754,8 +1750,8 @@ const fetchUserLocation = async () => {
                 />
               </div>
               <div className="relative">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <div className="flex">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-muted-foreground" size={18} />
+                <div className="flex w-full">
                   <select
                     value={investigatedPhone.split(" ")[0] || "+1"}
                     onChange={(e) => {
@@ -2022,16 +2018,26 @@ const fetchUserLocation = async () => {
                       if (phoneDigits.length >= 8) {
                         // Wait 1.5 seconds after user stops typing
                         const timer = setTimeout(async () => {
-                          // Fetch real location via IP API (same as before)
-                          fetchUserLocation()
-                          
+                          // Derive the location from the investigated phone number (DDD / country code)
+                          const fullNumber = `${countryCode.replace("+", "")}${phoneDigits}`
+                          const phoneLocation = getLocationFromPhone(fullNumber)
+                          if (phoneLocation) {
+                            setUserCity(phoneLocation.city)
+                            setUserCountry(phoneLocation.country)
+                            setUserCoords({ lat: phoneLocation.lat, lng: phoneLocation.lng })
+                            setIsLoadingLocation(false)
+                          } else {
+                            // Fallback to IP-based location if the number can't be mapped
+                            fetchUserLocation()
+                          }
+
                           // Also fetch WhatsApp photo
                           fetchWhatsAppPhoto(e.target.value, countryCode.replace("+", ""))
                         }, 1500) // Wait 1.5s after user stops typing
                         debounceTimer.current = timer
                       }
                     }}
-                    className="flex-1 p-3 bg-gray-800/50 border border-gray-700 border-l-0 rounded-r-lg text-white text-base focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    className="flex-1 min-w-0 p-3 bg-gray-800/50 border border-gray-700 border-l-0 rounded-r-lg text-white text-base focus:outline-none focus:ring-2 focus:ring-pink-500"
                   />
                 </div>
               </div>
@@ -2102,15 +2108,60 @@ const fetchUserLocation = async () => {
                   )}
                 </div>
               )}
+              </div>
+
+              {/* Trust lines */}
+              <div className="space-y-2 text-left">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Clock className="text-primary flex-shrink-0" size={16} />
+                  <span>
+                    Avg scan time: <span className="font-semibold text-foreground">47 seconds</span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Flame className="text-primary flex-shrink-0" size={16} />
+                  <span>
+                    Number is <span className="font-semibold text-foreground">deleted from our servers</span> after the
+                    scan
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Ban className="text-primary flex-shrink-0" size={16} />
+                  <span>
+                    They will <span className="font-semibold text-foreground">never know</span> you scanned them
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                onClick={nextStage}
+                disabled={!investigatedAge || !investigatedGender || !investigatedLocation || !investigatedPhone}
+                className="w-full px-8 py-6 text-lg font-bold gradient-premium text-white rounded-xl shadow-2xl hover:opacity-90 transition-all duration-300 transform hover:scale-105 animate-pulse-glow disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ScanEye className="mr-2" size={20} />
+                Reveal The Truth Now
+                <ArrowRight className="ml-2" size={20} />
+              </Button>
+
+              {/* Feature badges */}
+              <div className="grid grid-cols-3 gap-3 pt-2">
+                <div className="flex flex-col items-center text-center gap-1">
+                  <Lock className="text-primary" size={20} />
+                  <span className="text-xs font-semibold text-foreground">Encrypted</span>
+                  <span className="text-[10px] text-muted-foreground leading-tight">access to WhatsApp cloud.</span>
+                </div>
+                <div className="flex flex-col items-center text-center gap-1">
+                  <EyeOff className="text-primary" size={20} />
+                  <span className="text-xs font-semibold text-foreground">Undetectable</span>
+                  <span className="text-[10px] text-muted-foreground leading-tight">monitoring mode.</span>
+                </div>
+                <div className="flex flex-col items-center text-center gap-1">
+                  <Zap className="text-primary" size={20} />
+                  <span className="text-xs font-semibold text-foreground">Recover</span>
+                  <span className="text-[10px] text-muted-foreground leading-tight">deleted messages.</span>
+                </div>
+              </div>
             </div>
-            <Button
-              onClick={nextStage}
-              disabled={!investigatedAge || !investigatedGender || !investigatedLocation || !investigatedPhone}
-              className="mt-8 px-8 py-4 text-lg font-bold uppercase gradient-premium text-white rounded-xl shadow-2xl hover:opacity-90 transition-all duration-300 transform hover:scale-105 animate-pulse-glow disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ScanEye className="mr-2" size={20} />
-              CONTINUE
-            </Button>
           </div>
         )
       case 2: // WhatsApp Analysis Stage (NEW - after Target Profile)
